@@ -184,11 +184,13 @@ int main(int argc, char *argv[])
           if (strstr(buffer, "PROCESS_CLIENT") == buffer)
           {
             control = 1;
+            printf("DEBUG - entrei no process_client %d", control);
           }
 
           // worker communication
           if (control)
           {
+            printf("DEBUG - entrei no if do control", control);
             if (strcmp(buffer, "GET_JOB") == 0)
             {
               printf("Enviando o job...\n\n", buffer);

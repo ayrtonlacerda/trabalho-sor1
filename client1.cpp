@@ -15,8 +15,10 @@ int main(int argc, char const *argv[])
   struct sockaddr_in address;
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
+
   char *hello = "PROCESS_CLIENT";
   char buffer[1024] = {0};
+
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
   {
     printf("\n Socket creation error \n");
@@ -40,6 +42,7 @@ int main(int argc, char const *argv[])
     printf("\nConnection Failed \n");
     return -1;
   }
+
   //  ler mensagem recebida do servidor apos fazer a conexão
   valread = read(sock, buffer, 1024);
   printf("Mensagem recebida do servidor:\n");
@@ -50,7 +53,7 @@ int main(int argc, char const *argv[])
   {
     while (1)
     {
-      // enviar mensagem pedindo um job --> hello = "GET_JOB"
+      // enviar mensagem pedindo um job --> hello = "PROCESS_CLIENT"
       if (filled)
       {
         send(sock, hello, strlen(hello), 0);

@@ -55,7 +55,7 @@ int main(int argc, char const *argv[])
 
   //  ler mensagem recebida do servidor apos fazer a conexão
   valread = read(sock, buffer, 1024);
-  printf("Mensagem recebida do servidor:\n");
+  printf("Mensagem recebida do servidor:\n"); // em tese a msg 'connect'
   printf("---%s\n\n", buffer);
 
   // recebe mensagem do servidor connec dizendo que a uma comunicação entre os dois
@@ -67,8 +67,8 @@ int main(int argc, char const *argv[])
       if (1)
       {
         send(sock, hello, strlen(hello), 0);
-        printf("Msg enviada do worker1:\n--%s\n\n", hello);
-        filled = 0;
+        printf("Msg que estou enviando:\n--%s\n\n", hello);
+        // filled = 0;
       }
 
       valread = read(sock, buffer, 1024);
