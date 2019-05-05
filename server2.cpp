@@ -180,27 +180,16 @@ int main(int argc, char *argv[])
           //of the data read
           printf("\nRecebido do socket:\n");
           printf("-- %s\n\n", buffer);
-          // client comunication
-          if (strstr(buffer, "PROCESS_CLIENT") == buffer)
-          {
-            control = 1;
-            printf("DEBUG - entrei no process_client %d", control);
-          }
 
-          // worker communication
-          if (control)
+          if (strcmp(buffer, "GET_JOB") == 0)
           {
-            printf("DEBUG - entrei no if do control", control);
-            if (strcmp(buffer, "GET_JOB") == 0)
-            {
-              printf("Enviando o job...\n\n", buffer);
-              send(sd, sendJob, strlen(buffer), 0);
-            }
-            else if (strstr(buffer, "RESULT_JOB") == buffer)
-            {
-              printf("Fechando conexao...\n\n", buffer);
-              send(sd, messageCloseConnect, strlen(buffer), 0);
-            }
+            printf("Enviando o job...\n\n", buffer);
+            send(sd, sendJob, strlen(buffer), 0);
+          }
+          else if (strstr(buffer, "RESULT_JOB") == buffer)
+          {
+            printf("Fechando conexao...\n\n", buffer);
+            send(sd, messageCloseConnect, strlen(buffer), 0);
           }
         }
       }

@@ -54,11 +54,11 @@ int main(int argc, char const *argv[])
     while (1)
     {
       // enviar mensagem pedindo um job --> hello = "PROCESS_CLIENT"
-      if (filled)
+      if (1)
       {
         send(sock, hello, strlen(hello), 0);
         printf("Msg enviada do client1:\n--%s\n\n", hello);
-        filled = 0;
+        // filled = 0;
       }
 
       valread = read(sock, buffer, 1024);
