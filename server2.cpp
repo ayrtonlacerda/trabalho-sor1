@@ -42,12 +42,32 @@ int main(int argc, char *argv[])
     client_socket[i] = 0;
   }
 
+  /*
+
+    Inicializa todos os clientes com 0 (FALSE)
+    Máximo de clientes possível = 30
+
+  */
+
   //create a master socket
   if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
   {
     perror("socket failed");
     exit(EXIT_FAILURE);
   }
+
+  /*
+
+    Cria um novo socket:
+      int domain = AF_INET (família de endereços IPv4)
+      int type = SOCK_STREAM (comunicação TCP)
+      int protocol = 0 (protocolo IP)
+
+    Se houver um erro com a criação do socket:
+      Exibe mensagem de erro "socket failed"
+      Encerra o programa
+
+  */
 
   //set master socket to allow multiple connections ,
   //this is just a good habit, it will work without this
@@ -63,6 +83,20 @@ int main(int argc, char *argv[])
   address.sin_addr.s_addr = INADDR_ANY;
   address.sin_port = htons(PORT);
 
+  /*
+
+    Permite que o socket master realize múltiplas conexões
+      int level = SOL_SOCKET (itens são procurados dentro do próprio socket)
+      int option_name = SO_REUSEADDR (permite que endereços sejam reutilizados)
+      const char *option_value = (char *)&opt (aponta para opt = TRUE)
+      int option_len = sizeof(opt) (tamanho de opt = 4)
+
+    Se ocorrer um erro com a configuração do socket:
+      Exibe mensagem de erro "setsockopt"
+      Encerra o programa
+
+  */
+
   //bind the socket to localhost port 8888
   if (bind(master_socket, (struct sockaddr *)&address, sizeof(address)) < 0)
   {
@@ -71,6 +105,18 @@ int main(int argc, char *argv[])
   }
   printf("Listener on port %d \n", PORT);
 
+
+
+  /*
+
+    Liga o socket à porta 8888
+      const struct sockaddr *addr = (struct sockaddr *)&address (utiliza estrutura padrão address, do tipo sockaddr)
+      int addr_len = sizeof(address) (tamanho do endereço)
+
+    Se der certo, printa a PORT em que o servidor está escutando (8888)
+
+  */
+
   //try to specify maximum of 3 pending connections for the master socket
   if (listen(master_socket, 3) < 0)
   {
@@ -78,18 +124,37 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
 
+  /*
+
+    O servidor fica em modo passivo, esperando o cliente requisitar uma conexão
+    Limita fila de espera para 3 conexões pendentes
+    Se um cliente tentar se conectar e a fila estiver cheia, recebe uma mensgem de erro
+
+  */
+
   //accept the incoming connection
   addrlen = sizeof(address);
   puts("Waiting for connections ...");
 
+  /*
+
+    readfds é do tipo fd_set
+    É o conjunto de sockets a serem monitorados (pelo select)
+    FD_ZERO: limpa o readfds
+    FD_ISSET: checa se uma porta específica está dentro de readfds
+    FD_SET: adiciona uma porta específica à readfds
+    FD_CLR: remove uma porta específica de readfds
+
+  */
+
   while (TRUE)
   {
     //clear the socket set
-    FD_ZERO(&readfds);
+    FD_ZERO(&readfds);                  // Limpa readfds
 
     //add master socket to set
-    FD_SET(master_socket, &readfds);
-    max_sd = master_socket;
+    FD_SET(master_socket, &readfds);   // Adiciona master_socket à readfds
+    max_sd = master_socket;            // Porta mais alta = porta do master
 
     //add child sockets to set
     for (i = 0; i < max_clients; i++)
@@ -106,6 +171,18 @@ int main(int argc, char *argv[])
         max_sd = sd;
     }
 
+    /*
+
+      Percorre o array de 30 clientes possíveis em busca de algum cliente
+      Se encontrar algum (client_socket[i] > 0 = TRUE),
+        Adiciona o cliente á readfds
+
+      Obs: max_sd armazena o valor do socket (porta) mais alto
+      Se algum cliente estiver em uma porta mais alta que o master:
+        max_sd = porta do cliente
+
+    */
+
     //wait for an activity on one of the sockets , timeout is NULL ,
     //so wait indefinitely
     activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
@@ -114,6 +191,15 @@ int main(int argc, char *argv[])
     {
       printf("select error");
     }
+
+    /*
+
+      O método select() monitora a readfds (lista de sockets) em busca de uma atividade
+      Enquanto uma atividade não ocorrer, processador fica bloqueado nessa instrução
+      Quando ocorrer, indica que chegou alguma solicitação de conexão:
+        O processador sai da instrução e segue a execução
+
+    */
 
     //If something happened on the master socket ,
     //then its an incoming connection
@@ -125,6 +211,15 @@ int main(int argc, char *argv[])
         perror("accept");
         exit(EXIT_FAILURE);
       }
+
+      /*
+
+        Se o master_socket está no readfds:
+          Extrai a primeira solicitação de conexão da fila de conexões pendentes no socket ouvinte
+          Cria um novo socket conectado e retorna um arquivo referenciando esse socket
+          Assim, a conexão é estabelecida entre o cliente e o servidor e os dados podem ser enviados
+
+      */
 
       //inform user of socket number - used in send and receive commands
       printf("New connection , socket fd is %d , ip is : %s , port : %d \n", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
@@ -163,7 +258,7 @@ int main(int argc, char *argv[])
         if ((valread = read(sd, buffer, 1024)) == 0)
         {
           //Somebody disconnected , get his details and print
-          getpeername(sd, (struct sockaddr *)&address, \ 
+          getpeername(sd, (struct sockaddr *)&address, \
                         (socklen_t *)&addrlen);
           printf("Host disconnected , ip %s , port %d \n",
                  inet_ntoa(address.sin_addr), ntohs(address.sin_port));
@@ -184,13 +279,11 @@ int main(int argc, char *argv[])
           if (strstr(buffer, "PROCESS_CLIENT") == buffer)
           {
             control = 1;
-            printf("DEBUG - entrei no process_client %d", control);
           }
 
           // worker communication
           if (control)
           {
-            printf("DEBUG - entrei no if do control", control);
             if (strcmp(buffer, "GET_JOB") == 0)
             {
               printf("Enviando o job...\n\n", buffer);
