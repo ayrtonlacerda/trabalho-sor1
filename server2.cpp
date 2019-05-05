@@ -17,6 +17,7 @@
 
 int main(int argc, char *argv[])
 {
+  int control = 0;
   int opt = TRUE;
   int master_socket, addrlen, new_socket, client_socket[30],
       max_clients = 30, activity, i, valread, sd;
@@ -24,13 +25,16 @@ int main(int argc, char *argv[])
   struct sockaddr_in address;
 
   char buffer[1025]; //data buffer of 1K
+  char *word;
 
   //set of socket descriptors
   fd_set readfds;
 
   //a message
-  char *message = "ECHO Daemon v1.0 \r\n";
-  char *message2 = "->> maluco doidao enviou \n\n";
+  char *message = "connect";
+  char *sendJob = "JOB";
+  char *messageCloseConnect = "CLOSE";
+  char *messageCloseConnectClient = "CLOSE_PROCESS";
 
   //initialise all client_socket[] to 0 so not checked
   for (i = 0; i < max_clients; i++)
@@ -174,12 +178,28 @@ int main(int argc, char *argv[])
         {
           //set the string terminating NULL byte on the end
           //of the data read
+          printf("\nRecebido do socket:\n");
+          printf("-- %s\n\n", buffer);
+          // client comunication
+          if (strstr(buffer, "PROCESS_CLIENT") == buffer)
+          {
+            control = 1;
+          }
 
-          printf("recebido do socket\n\n");
-          valread = read(sd, buffer, 1024);
-          printf("%s\n", buffer);
-          //valread = read(sd, message2, 1024);
-          send(sd, message2, strlen(buffer), 0);
+          // worker communication
+          if (control)
+          {
+            if (strcmp(buffer, "GET_JOB") == 0)
+            {
+              printf("Enviando o job...\n\n", buffer);
+              send(sd, sendJob, strlen(buffer), 0);
+            }
+            else if (strstr(buffer, "RESULT_JOB") == buffer)
+            {
+              printf("Fechando conexao...\n\n", buffer);
+              send(sd, messageCloseConnect, strlen(buffer), 0);
+            }
+          }
         }
       }
     }

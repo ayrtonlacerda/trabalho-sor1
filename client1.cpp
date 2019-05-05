@@ -10,10 +10,12 @@
 
 int main(int argc, char const *argv[])
 {
+  int filled = 1;
+
   struct sockaddr_in address;
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
-  char *hello = "Enviando numero SOR7";
+  char *hello = "PROCESS_CLIENT";
   char buffer[1024] = {0};
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
   {
@@ -38,12 +40,38 @@ int main(int argc, char const *argv[])
     printf("\nConnection Failed \n");
     return -1;
   }
-  send(sock, hello, strlen(hello), 0);
-  printf("Hello message sent %s\n", hello);
+  //  ler mensagem recebida do servidor apos fazer a conexão
   valread = read(sock, buffer, 1024);
-  printf("%s\n", buffer);
-  while (1)
+  printf("Mensagem recebida do servidor:\n");
+  printf("---%s\n\n", buffer);
+
+  // recebe mensagem do servidor connec dizendo que a uma comunicação entre os dois
+  if (strcmp(buffer, "connect") == 0)
   {
+    while (1)
+    {
+      // enviar mensagem pedindo um job --> hello = "GET_JOB"
+      if (filled)
+      {
+        send(sock, hello, strlen(hello), 0);
+        printf("Msg enviada do client1:\n--%s\n\n", hello);
+        filled = 0;
+      }
+
+      valread = read(sock, buffer, 1024);
+      printf("Mensagem recebida do servidor:\n");
+      printf("---%s\n\n", buffer);
+
+      if (strcmp(buffer, "CLOSE_PROCESS") == 0)
+      {
+        printf("Fecha cliente: \n");
+        break;
+      }
+    }
+  }
+  else
+  {
+    printf("não houve conexao por msg connect");
   };
 
   return 0;

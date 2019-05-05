@@ -10,10 +10,24 @@
 
 int main(int argc, char const *argv[])
 {
+  // minha variaveis e constantes
+  int testSend = 1;
+  int compare = 0;
+  char *letter1;
+  char *letter2;
+  char *letter3;
+  char stringCompare[1024] = "JOB";
+  int filled = 1;
+  // char arrayCompare[];
+  // ate aqui
+
   struct sockaddr_in address;
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
-  char *hello = "Conexão com worker1";
+
+  char *hello = "GET_JOB";
+  char *resultJob = "RESULT_JOB";
+
   char buffer[1024] = {0};
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
   {
@@ -38,12 +52,71 @@ int main(int argc, char const *argv[])
     printf("\nConnection Failed \n");
     return -1;
   }
-  send(sock, hello, strlen(hello), 0);
-  printf("Hello message sent\n");
+
+  //  ler mensagem recebida do servidor apos fazer a conexão
   valread = read(sock, buffer, 1024);
-  printf("%s\n", buffer);
-  while (1)
+  printf("Mensagem recebida do servidor:\n");
+  printf("---%s\n\n", buffer);
+
+  // recebe mensagem do servidor connec dizendo que a uma comunicação entre os dois
+  if (strcmp(buffer, "connect") == 0)
   {
+    while (1)
+    {
+      // enviar mensagem pedindo um job --> hello = "GET_JOB"
+      if (1)
+      {
+        send(sock, hello, strlen(hello), 0);
+        printf("Msg enviada do worker1:\n--%s\n\n", hello);
+        filled = 0;
+      }
+
+      valread = read(sock, buffer, 1024);
+      printf("Mensagem recebida do servidor:\n");
+      printf("---%s\n\n", buffer);
+
+      if (strcmp(buffer, "JOB") == 0)
+      {
+        printf("Executa o job: %s\n", resultJob);
+        send(sock, resultJob, strlen(resultJob), 0);
+        printf("Finish job\n");
+      }
+      else if (strcmp(buffer, "CLOSE") == 0)
+      {
+        printf("finaliza conexao");
+        break;
+      }
+    }
   }
+  else
+  {
+    printf("não houve conexao por msg connect");
+  };
+
   return 0;
 }
+
+// #########################################################
+/*
+
+    if (1)
+    {
+      for (int i = 0; i < 10000000; i++)
+      {
+      }
+      send(sock, hello, strlen(hello), 0);
+      printf("Msg enviada do worker1:\n--%s\n\n", hello);
+    }
+
+
+    if (0)
+    {
+      send(sock, hello, strlen(hello), 0);
+      printf("Hello message sent\n\n");
+    }
+
+    valread = read(sock, buffer, 1024);
+    printf("%d\n\n", valread);
+    printf("%s\n", buffer);
+
+*/
