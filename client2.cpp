@@ -21,10 +21,11 @@ using namespace std;
 typedef struct MSG
 {
 	int type;
-	int sender;
+	int line;
 	int message[BUFSIZE];
 }MSG;
 
+void deserialize(int *data, MSG* msgPacket);
 void serialize(MSG* msgPacket, int *data);
 
 void printMsg(MSG* msgPacket);
@@ -35,11 +36,12 @@ int main(int argc, char const *argv[])
 
   struct sockaddr_in address;
   int sock = 0, valread;
-  struct sockaddr_in serv_addr;
+  struct sockaddr_in serv_addr,serv_addr2;
 	int foto[3][5]={{10,20,33,44,55},{1,2,3,14,5},{5,8,9,75,85}};
 	MSG* newMsg = new MSG;
+  MSG* temp = new MSG;
 	newMsg->type = 3;
-	newMsg->sender = 2;
+	newMsg->line = 0;
 
   char *hello = "PROCESS_CLIENT";
   char buffer[1024] = {0};
@@ -51,7 +53,6 @@ int main(int argc, char const *argv[])
   }
 
   memset(&serv_addr, '0', sizeof(serv_addr));
-
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(PORT);
 
@@ -78,29 +79,33 @@ int main(int argc, char const *argv[])
   {
     while (1)
     {
-      // enviar mensagem pedindo um job --> hello = "PROCESS_CLIENT"
-      if (filled)
+
+      if (filled == 1)
       {
-		for(int j=0;j<3;j++){	
-		for(int i=0;i<5;i++){
-		newMsg->message[i] = foto[j][i];
-		cout << newMsg->message[i] << " ";
-		}
-		cout << endl;
-		int data[PACKETSIZE];
-		serialize(newMsg, data);
-		printMsg(newMsg);
-		send(sock, data, PACKETSIZE, 0);
+				for(int j=0;j<3;j++){
+						for(int i=0;i<5;i++){
+							newMsg->message[i] = foto[j][i];
+							cout << newMsg->message[i] << " ";
+						}
+						cout << endl;
+					int data[PACKETSIZE];
+					serialize(newMsg, data);
+					printMsg(newMsg);
+					send(sock, data, PACKETSIZE, 0);
+					newMsg->line = newMsg->line + 1;
 
-		filled = 0;
-		}
-		
-      }
-
-      valread = read(sock, buffer, 1024);
-      printf("Mensagem recebida do servidor:\n");
-      printf("---%s\n\n", buffer);
-
+				}
+				filled = 0;
+			  }
+			cout << "Resultado vindo do Servidor:" <<endl;
+			int result[PACKETSIZE];
+      read(sock, result, 1024);
+			deserialize(result, temp);
+			for(int i = 0; i< 5;i++)
+			{
+				cout << temp->message[i] << " ";
+			}
+			cout << endl;
       if (strcmp(buffer, "CLOSE_PROCESS") == 0)
       {
         printf("Fecha cliente: \n");
@@ -119,16 +124,30 @@ int main(int argc, char const *argv[])
 void printMsg(MSG* msgPacket)
 {
 	cout << msgPacket->type << endl;
-	cout << msgPacket->sender << endl;
+	cout << msgPacket->line << endl;
 	cout << msgPacket->message << endl;
 }
+void deserialize(int *data, MSG* msgPacket)
+{
+	int *q = (int*)data;
+	msgPacket->type = *q;		q++;
+	msgPacket->line = *q;		q++;
 
+	char *p = (char*)q;
+	int i = 0;
+	while (i < BUFSIZE)
+	{
+		msgPacket->message[i] = *p;
+		p++;
+		i++;
+	}
+}
 void serialize(MSG* msgPacket, int *data)
 {
-	int *q = (int*)data;	
-	*q = msgPacket->type;		q++;	
-	*q = msgPacket->sender;		q++;
-	
+	int *q = (int*)data;
+	*q = msgPacket->type;		q++;
+	*q = msgPacket->line;		q++;
+
 	char *p = (char*)q;
 	int i = 0;
 	while (i < BUFSIZE)

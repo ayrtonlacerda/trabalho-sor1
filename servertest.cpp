@@ -22,20 +22,21 @@ using namespace std;
 typedef struct MSG
 {
 	int type;
-	int sender;
+	int line;
 	int message[BUFSIZE];
 }MSG;
 
 void deserialize(int *data, MSG* msgPacket);
 void printMsg(MSG* msgPacket);
+void serialize(MSG* msgPacket, int *data);
 
 int main(int argc, char *argv[])
 {
   int control = 0;
   int opt = TRUE;
-  int master_socket, addrlen, new_socket, client_socket[30],
-      max_clients = 30, activity, i, valread, sd;
+  int master_socket, addrlen, new_socket, client_socket[30], activity, i, valread, sd;
   int max_sd;
+	int max_clients = 30;
   struct sockaddr_in address;
   int data[PACKETSIZE];
   char buffer[1025]; //data buffer of 1K
@@ -162,21 +163,28 @@ while (TRUE)
       }
     }
 //else its some IO operation on some other socket
-    for (i = 0; i < max_clients; i++)
+    for (i = 0; i < 3; i++)
     {
       sd = client_socket[i];
       read(sd, data, 1024);
       deserialize(data, temp);
       int tipo = temp->type;
-
+			cout << "Vezes: " << i << endl;
 			if(tipo == JOB){
-	  	printf("\nRecebido do socket:\n");
-	  	for(int i = 0; i< 5;i++)
-	  	{
-				cout << temp->message[i] << " ";
-	  	}
-	  	printMsg(temp);
-	}
+	  		printf("\nRecebido do socket:\n");
+
+				for(int i = 0; i< 5;i++)
+	  		{
+					cout << temp->message[i] << " ";
+					temp->message[i] = 2 *temp->message[i];
+	  		}
+				int server_fd;
+				int result[PACKETSIZE];
+				serialize(temp, result);
+				send(new_socket, result, PACKETSIZE, 0);
+				cout << endl << "Mensagem Enviada:" << endl;
+				printMsg(temp);
+			}
 
       }
     }
@@ -190,7 +198,7 @@ void deserialize(int *data, MSG* msgPacket)
 {
 	int *q = (int*)data;
 	msgPacket->type = *q;		q++;
-	msgPacket->sender = *q;		q++;
+	msgPacket->line = *q;		q++;
 
 	char *p = (char*)q;
 	int i = 0;
@@ -201,9 +209,25 @@ void deserialize(int *data, MSG* msgPacket)
 		i++;
 	}
 }
+void serialize(MSG* msgPacket, int *data)
+{
+	int *q = (int*)data;
+	*q = msgPacket->type;		q++;
+	*q = msgPacket->line;		q++;
+
+	char *p = (char*)q;
+	int i = 0;
+	while (i < BUFSIZE)
+	{
+		*p = msgPacket->message[i];
+		p++;
+		i++;
+	}
+}
+
 void printMsg(MSG* msgPacket)
 {
 	cout << msgPacket->type << endl;
-	cout << msgPacket->sender << endl;
+	cout << msgPacket->line << endl;
 	cout << msgPacket->message << endl;
 }
